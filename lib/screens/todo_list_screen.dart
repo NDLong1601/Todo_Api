@@ -1,6 +1,6 @@
 import 'package:flutter/material.dart';
 import 'package:todo_api/const/app_color.dart';
-import 'package:todo_api/views/add_task.dart';
+import 'package:todo_api/screens/add_task.dart';
 
 class TodoListScreen extends StatelessWidget {
   const TodoListScreen({super.key});
