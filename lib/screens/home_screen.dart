@@ -1,9 +1,11 @@
 import 'package:flutter/material.dart';
 import 'package:provider/provider.dart';
+import 'package:todo_api/components/app_text.dart';
+import 'package:todo_api/components/app_textstyle.dart';
 import 'package:todo_api/const/app_color.dart';
 import 'package:todo_api/providers/task_provider.dart';
-import 'package:todo_api/screens/completed_screen.dart';
-import 'package:todo_api/screens/todo_list_screen.dart';
+import 'package:todo_api/screens/add_task_screen.dart';
+import 'package:todo_api/screens/edit_task_screen.dart';
 
 class HomeScreen extends StatefulWidget {
   const HomeScreen({super.key});
@@ -13,7 +15,7 @@ class HomeScreen extends StatefulWidget {
 }
 
 class _HomeScreenState extends State<HomeScreen> {
-  final List<Widget> _tabs = [const TodoListScreen(), const CompletedScreen()];
+  late VoidCallback onEdit;
 
   @override
   void initState() {
@@ -25,8 +27,17 @@ class _HomeScreenState extends State<HomeScreen> {
 
   @override
   Widget build(BuildContext context) {
+    final double screenHeight = MediaQuery.of(context).size.height;
+    final double screenWidth = MediaQuery.of(context).size.width;
     return Scaffold(
-      appBar: AppBar(title: Text('TODO APP')),
+      backgroundColor: AppColor.purple1,
+      appBar: AppBar(
+        title: AppText(
+          title: 'TODO APP',
+          style: AppTextStyle.semiBoldTsSize24White,
+        ),
+        backgroundColor: AppColor.purple,
+      ),
       body: Consumer<TaskProvider>(
         builder: (context, taskProvider, child) {
           /// Loading state:
@@ -47,44 +58,95 @@ class _HomeScreenState extends State<HomeScreen> {
           }
 
           /// List Task with data
-          return Column(
+          return Stack(
             children: [
-              Expanded(
-                child: ListView.separated(
-                  itemCount: taskProvider.pendingTasks.length,
-                  separatorBuilder: (context, index) => SizedBox(height: 20),
-                  itemBuilder: (context, index) {
-                    final item = taskProvider.pendingTasks[index];
-                    return Container(
-                      color: Colors.black12,
-                      height: 50,
-                      child: Text(item.title),
-                    );
-                  },
+              Padding(
+                padding: EdgeInsets.only(top: screenHeight * (22 / 896)),
+                child: Column(
+                  children: [
+                    Expanded(
+                      child: ListView.separated(
+                        itemCount: taskProvider.pendingTasks.length,
+                        separatorBuilder: (context, index) =>
+                            SizedBox(height: 15),
+                        itemBuilder: (context, index) {
+                          final item = taskProvider.pendingTasks[index];
+                          return Container(
+                            margin: EdgeInsets.symmetric(
+                              horizontal: screenWidth * (7 / 414),
+                            ),
+                            decoration: BoxDecoration(
+                              borderRadius: BorderRadius.circular(10),
+                              color: AppColor.white,
+                            ),
+                            height: screenHeight * (82 / 896),
+                            width: screenWidth * (400 / 414),
+                            padding: EdgeInsets.symmetric(
+                              vertical: screenHeight * (12 / 896),
+                              horizontal: 16,
+                            ),
+                            child: Row(
+                              mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                              children: [
+                                Expanded(
+                                  child: Column(
+                                    crossAxisAlignment:
+                                        CrossAxisAlignment.start,
+                                    children: [
+                                      Flexible(
+                                        child: AppText(
+                                          title: item.title ?? '...',
+                                          maxLines: 1,
+                                          // overflow: TextOverflow.ellipsis,
+                                          style: AppTextStyle
+                                              .semiBoldTsSize13Purple,
+                                        ),
+                                      ),
+                                      SizedBox(height: 6),
+                                      Flexible(
+                                        child: AppText(
+                                          title: item.description ?? '...',
+                                          maxLines: 1,
+                                          // overflow: TextOverflow.ellipsis,
+                                          style:
+                                              AppTextStyle.regularTsSize10Black,
+                                        ),
+                                      ),
+                                    ],
+                                  ),
+                                ),
+
+                                Icon(Icons.edit, color: AppColor.purple),
+                                Icon(Icons.delete, color: AppColor.purple),
+                                Icon(
+                                  Icons.check_circle_outline,
+                                  color: AppColor.purple,
+                                ),
+                              ],
+                            ),
+                          );
+                        },
+                      ),
+                    ),
+                  ],
                 ),
               ),
             ],
           );
         },
       ),
+      bottomNavigationBar: BottomNavigationBar(
+        items: [
+          BottomNavigationBarItem(
+            icon: Icon(Icons.list),
+            label: 'List',
+            backgroundColor: AppColor.purple,
+          ),
+          BottomNavigationBarItem(icon: Icon(Icons.done), label: 'Completed'),
+        ],
+        currentIndex: 0,
+        onTap: (index) {},
+      ),
     );
-    // return CupertinoPageScaffold(
-    //   navigationBar: CupertinoNavigationBar(
-    //     middle: Text('TODO'),
-    //     backgroundColor: AppColor.purple,
-    //   ),
-    //   child: CupertinoTabScaffold(
-    //     backgroundColor: AppColor.purple,
-    //     tabBar: CupertinoTabBar(
-    //       items: const [
-    //         BottomNavigationBarItem(icon: Icon(Icons.list), label: 'All'),
-    //         BottomNavigationBarItem(icon: Icon(Icons.done), label: 'Completed'),
-    //       ],
-    //     ),
-    //     tabBuilder: (BuildContext context, int index) {
-    //       return _tabs[index];
-    //     },
-    //   ),
-    // );
   }
 }
