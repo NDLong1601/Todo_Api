@@ -58,16 +58,16 @@ class _EditTaskScreenState extends State<EditTaskScreen> {
     );
 
     try {
-      await context.read<TaskProvider>().updateTask(
-        widget.task.id!,
-        updatedTask,
-      );
-
-      Navigator.pop(context);
+      await context.read<TaskProvider>().updateTask(updatedTask);
+      if (mounted) {
+        Navigator.pop(context);
+      }
     } catch (e) {
-      ScaffoldMessenger.of(
-        context,
-      ).showSnackBar(SnackBar(content: Text("Failed to update task: $e")));
+      if (mounted) {
+        ScaffoldMessenger.of(
+          context,
+        ).showSnackBar(SnackBar(content: Text("Failed to update task: $e")));
+      }
     } finally {
       if (mounted) {
         setState(() => _isSubmitting = false);

@@ -12,7 +12,7 @@ class ApiService {
   Map<String, String> apiHeader = {
     'Content-Type': 'application/json',
     'x-rapidapi-host': 'task-manager-api3.p.rapidapi.com',
-    'x-rapidapi-key': '9c017ff99cmsh5fd9b3ead41068ep106e77jsnbf756e75c3d8',
+    'x-rapidapi-key': '7d744c6ef6msh6295387dee9a9e0p1f763djsndf07a261252a',
   };
 
   /// Get all tasks
@@ -20,6 +20,10 @@ class ApiService {
     try {
       final url = Uri.parse(baseUrl);
       final response = await http.get(url, headers: apiHeader);
+      debugPrint('Method: GET');
+      debugPrint('GET All Tasks: $url');
+      debugPrint('Response status: ${response.statusCode}');
+      debugPrint('Response body: ${response.body}');
       if (response.statusCode == 200) {
         /// success -> return data
         /// response.body -> JSON String -> "{}"
@@ -53,14 +57,15 @@ class ApiService {
   Future<void> deleteTaskByID(String id) async {
     try {
       /// url contain id
-      // final url = Uri.parse('$baseUrl/$id');
       final url = Uri.parse('$baseUrl$id');
-      final response = await http.delete(
-        url,
-        headers: apiHeader,
-        body: jsonEncode({}),
-      );
+      final response = await http.delete(url, headers: apiHeader);
+      debugPrint('Method: DELETE');
+      debugPrint('DELETE Task: $url');
+      debugPrint('Response status: ${response.statusCode}');
+      debugPrint('Response body: ${response.body}');
+
       if (response.statusCode == 200) {
+        debugPrint('Task deleted successfully');
         return;
       } else {
         debugPrint('Failed to delete task (status ${response.statusCode})');
@@ -75,9 +80,9 @@ class ApiService {
   }
 
   /// Update Task
-  Future<TaskModel> updateTask(String id, TaskModel task) async {
+  Future<void> updateTask(TaskModel task) async {
     try {
-      final url = Uri.parse("${baseUrl}$id");
+      final url = Uri.parse("$baseUrl${task.id}");
 
       final response = await http.put(
         url,
@@ -85,14 +90,13 @@ class ApiService {
         body: jsonEncode(task.toJson()),
       );
 
-      if (response.statusCode == 200) {
-        final jsonResponse = jsonDecode(response.body);
+      debugPrint('Method: PUT');
+      debugPrint('PUT Task: $url');
+      debugPrint('Response status: ${response.statusCode}');
+      debugPrint('Response body: ${response.body}');
 
-        if (jsonResponse is Map<String, dynamic>) {
-          return TaskModel.fromJson(jsonResponse);
-        } else {
-          throw Exception("Invalid API response format");
-        }
+      if (response.statusCode == 200) {
+        debugPrint('Task updated successfully');
       } else {
         throw Exception(
           'Failed to update task: '
@@ -117,6 +121,11 @@ class ApiService {
         body: jsonEncode(task.toJson()),
       );
 
+      debugPrint('Method: POST');
+      debugPrint('POST Task: $url');
+      debugPrint('Response status: ${response.statusCode}');
+      debugPrint('Response body: ${response.body}');
+
       if (response.statusCode == 200 || response.statusCode == 201) {
         final jsonRespone = jsonDecode(response.body);
         if (jsonRespone is Map<String, dynamic>) {
@@ -132,37 +141,6 @@ class ApiService {
     } catch (e, stackTrace) {
       debugPrint('Error while creating task in ApiService: $e');
       debugPrint('StackTrace: $stackTrace');
-      throw Exception(e);
-    }
-  }
-
-  /// Update Status
-  Future<TaskModel> updateCompleteTask(String id) async {
-    try {
-      final url = Uri.parse('$baseUrl$id');
-
-      final response = await http.patch(
-        url,
-        headers: apiHeader,
-        body: jsonEncode({"status": "completada"}),
-      );
-
-      if (response.statusCode == 200) {
-        final jsonResponse = jsonDecode(response.body);
-
-        if (jsonResponse is Map<String, dynamic>) {
-          return TaskModel.fromJson(jsonResponse);
-        } else {
-          throw Exception("Invalid API response format for completeTask");
-        }
-      } else {
-        throw Exception(
-          "Failed to update task status: ${response.statusCode} - ${response.body}",
-        );
-      }
-    } catch (e, stackTrace) {
-      debugPrint("Error in completeTask: $e");
-      debugPrint("StackTrace: $stackTrace");
       throw Exception(e);
     }
   }

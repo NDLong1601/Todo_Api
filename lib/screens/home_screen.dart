@@ -21,7 +21,7 @@ class _HomeScreenState extends State<HomeScreen> {
   void initState() {
     super.initState();
     WidgetsBinding.instance.addPostFrameCallback(
-      (_) => context.read<TaskProvider>().getAllTasks(),
+      (_) => context.read<TaskProvider>().init(),
     );
   }
 
@@ -74,7 +74,7 @@ class _HomeScreenState extends State<HomeScreen> {
                       message: "Do you want to edit this task?",
                     );
 
-                    if (confirm) {
+                    if (confirm && context.mounted) {
                       Navigator.push(
                         context,
                         MaterialPageRoute(
@@ -91,11 +91,16 @@ class _HomeScreenState extends State<HomeScreen> {
                     );
 
                     if (confirm) {
+                      /// Always need to check task.id is not null
+                      /// because task.id is nullable -> crash the app if null
+                      if (task.id == null) return;
                       taskProvider.deleteTask(task.id!);
                     }
                   },
                   onComplete: () {
-                    taskProvider.markCompleted(task.id!);
+                    if (task.id == null) return;
+                    final taskNeedsUpdate = task.copyWith(status: 'completada');
+                    taskProvider.updateTask(taskNeedsUpdate);
                   },
                 );
               },
@@ -116,56 +121,54 @@ class _HomeScreenState extends State<HomeScreen> {
         },
       ),
 
-      bottomNavigationBar: SafeArea(
-        child: Container(
-          height: 60,
-          color: AppColor.purple,
-          child: Row(
-            children: [
-              Expanded(
-                child: GestureDetector(
-                  onTap: () {},
-                  child: Column(
-                    mainAxisAlignment: MainAxisAlignment.center,
-                    children: [
-                      const Icon(Icons.list, color: Colors.white),
-                      AppText(
-                        title: 'All',
-                        style: AppTextStyle.regularTsSize10White,
-                      ),
-                    ],
-                  ),
-                ),
-              ),
-
-              Expanded(
-                child: GestureDetector(
-                  onTap: () {
-                    Navigator.push(
-                      context,
-                      MaterialPageRoute(
-                        builder: (_) => const CompletedScreen(),
-                      ),
-                    );
-                  },
-                  child: Column(
-                    mainAxisAlignment: MainAxisAlignment.center,
-                    children: [
-                      const Icon(Icons.check, color: Colors.white),
-                      AppText(
-                        title: 'Completed',
-                        style: AppTextStyle.regularTsSize10White,
-                      ),
-                    ],
-                  ),
-                ),
-              ),
-            ],
-          ),
-        ),
-      ),
+      bottomNavigationBar: _buildBottomNavigationBarWidget(context),
     );
   }
+}
+
+Container _buildBottomNavigationBarWidget(BuildContext context) {
+  return Container(
+    color: AppColor.purple,
+    padding: EdgeInsets.symmetric(vertical: 15),
+    child: Row(
+      children: [
+        Expanded(
+          child: GestureDetector(
+            onTap: () {},
+            child: Column(
+              mainAxisAlignment: MainAxisAlignment.center,
+              mainAxisSize: MainAxisSize.min,
+              children: [
+                const Icon(Icons.list, color: Colors.white),
+                AppText(title: 'All', style: AppTextStyle.regularTsSize10White),
+              ],
+            ),
+          ),
+        ),
+        Expanded(
+          child: GestureDetector(
+            onTap: () {
+              Navigator.push(
+                context,
+                MaterialPageRoute(builder: (_) => const CompletedScreen()),
+              );
+            },
+            child: Column(
+              mainAxisAlignment: MainAxisAlignment.center,
+              mainAxisSize: MainAxisSize.min,
+              children: [
+                const Icon(Icons.check, color: Colors.white),
+                AppText(
+                  title: 'Completed',
+                  style: AppTextStyle.regularTsSize10White,
+                ),
+              ],
+            ),
+          ),
+        ),
+      ],
+    ),
+  );
 }
 
 Future<bool> showConfirmDialog({

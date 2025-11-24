@@ -11,9 +11,6 @@ class CompletedScreen extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    final provider = Provider.of<TaskProvider>(context);
-    final completedTasks = provider.completedTasks;
-
     return Scaffold(
       backgroundColor: AppColor.purple1,
       appBar: AppBar(
@@ -55,8 +52,17 @@ class CompletedScreen extends StatelessWidget {
 
                 return TaskItemCompleted(
                   task: task,
-                  onReturn: () {
-                    taskProvider.returnTask(task);
+                  onReturn: () async {
+                    final taskNeedsUpdate = task.copyWith(status: 'pendiente');
+                    await taskProvider.updateTask(taskNeedsUpdate);
+                    if (context.mounted) {
+                      ScaffoldMessenger.of(context).showSnackBar(
+                        const SnackBar(
+                          content: Text("Task returned to pending"),
+                        ),
+                      );
+                      Navigator.pop(context);
+                    }
                   },
                 );
               },

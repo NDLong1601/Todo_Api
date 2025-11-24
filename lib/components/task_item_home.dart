@@ -44,12 +44,12 @@ class TaskItemHome extends StatelessWidget {
               mainAxisAlignment: MainAxisAlignment.center,
               children: [
                 AppText(
-                  title: task.title.toUpperCase() ?? '...',
+                  title: task.title.toUpperCase(),
                   style: AppTextStyle.semiBoldTsSize13Purple,
                 ),
                 const SizedBox(height: 4),
                 AppText(
-                  title: task.description ?? '...',
+                  title: task.description,
                   style: AppTextStyle.regularTsSize10Black,
                 ),
               ],

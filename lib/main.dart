@@ -1,9 +1,19 @@
 import 'package:flutter/material.dart';
+import 'package:hive_flutter/adapters.dart';
 import 'package:provider/provider.dart';
+import 'package:todo_api/models/task_model.dart';
 import 'package:todo_api/providers/task_provider.dart';
 import 'package:todo_api/screens/home_screen.dart';
 
-void main() {
+void main() async {
+  WidgetsFlutterBinding.ensureInitialized();
+
+  /// Initialize Hive
+  await Hive.initFlutter();
+
+  /// Register Hive Adapters
+  Hive.registerAdapter(TaskModelAdapter());
+
   runApp(
     MultiProvider(
       providers: [ChangeNotifierProvider(create: (_) => TaskProvider())],

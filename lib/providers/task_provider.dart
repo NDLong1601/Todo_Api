@@ -1,6 +1,4 @@
 import 'package:flutter/material.dart';
-// ignore: unused_import
-import 'package:provider/provider.dart';
 import 'package:todo_api/models/task_model.dart';
 import 'package:todo_api/repositories/task_repository.dart';
 
@@ -24,121 +22,101 @@ class TaskProvider extends ChangeNotifier {
   List<TaskModel> get completedTasks =>
       _taskList.where((task) => task.isCompleted && task.id != null).toList();
 
+  /// Validate -> enable or disable add button
+
+  Future<void> init() async {
+    await taskRepository.init();
+    await getAllTasks();
+  }
+
   /// Get All Tasks
   Future<void> getAllTasks() async {
     try {
-      _isLoading = true;
-      notifyListeners();
+      _setLoading(true);
       _taskList = await taskRepository.getAllTasks();
       notifyListeners();
     } catch (e, stackTrace) {
-      _errorMsg = e.toString();
+      _setErrorMsg(e.toString());
       debugPrint(
         'Error while getAllTasks in TaskProvider: $e, stackTrace: $stackTrace',
       );
     } finally {
-      _isLoading = false;
+      _setLoading(false);
     }
   }
 
   /// Delete Task
   Future<void> deleteTask(String id) async {
     try {
-      _isLoading = true;
-      notifyListeners();
+      _setLoading(true);
       await taskRepository.deleteTaskByID(id);
       notifyListeners();
 
       _taskList.removeWhere((task) => task.id == id);
       notifyListeners();
     } catch (e, stackTrace) {
-      _errorMsg = e.toString();
+      _setErrorMsg(e.toString());
       debugPrint(
         'Error while deleteTask in TaskProvider: $e, stackTrace: $stackTrace',
       );
     } finally {
-      _isLoading = false;
-      notifyListeners();
-    }
-  }
-
-  /// Update Task
-  Future<void> updateTask(String id, TaskModel task) async {
-    try {
-      _isLoading = true;
-      notifyListeners();
-
-      final updateTask = await taskRepository.updateTask(id, task);
-      final index = _taskList.indexWhere((t) => t.id == id);
-      if (index != -1) {
-        _taskList[index] = updateTask;
-      }
-
-      notifyListeners();
-    } catch (e, stackTrace) {
-      _errorMsg = e.toString();
-      debugPrint(
-        'Error while updateTask in TaskProvider: $e, stackTrace: $stackTrace',
-      );
-    } finally {
-      _isLoading = false;
-      notifyListeners();
+      _setLoading(false);
     }
   }
 
   /// Create task
   Future<void> createTask(TaskModel task) async {
     try {
-      _isLoading = true;
-      notifyListeners();
+      _setLoading(true);
 
+      /// Call api create task
       final createTask = await taskRepository.createTask(task);
+
+      /// Api create success, add task created to _taskList
+      /// TODO: Check flow create task again
+
       _taskList.add(createTask);
       notifyListeners();
     } catch (e, stackTrace) {
-      _errorMsg = e.toString();
+      _setErrorMsg(e.toString());
       debugPrint(
         'Error while createTask in TaskProvider: $e, stackTrace: $stackTrace',
       );
     } finally {
-      _isLoading = false;
-      notifyListeners();
+      _setLoading(false);
     }
   }
 
-  /// Update Complete Task
-  Future<void> updateCompleteTask(String id) async {
+  /// Update Task
+  Future<void> updateTask(TaskModel task) async {
     try {
-      _isLoading = true;
-      notifyListeners();
+      _setLoading(true);
+      await taskRepository.updateTask(task);
 
-      final updateCompletedTask = await taskRepository.updateCompleteTask(id);
-      final index = _taskList.indexWhere((t) => t.id == id);
+      /// Update _taskList
+      final index = _taskList.indexWhere((t) => t.id == task.id);
       if (index != -1) {
-        _taskList[index] = updateCompletedTask;
+        _taskList[index] = task;
       }
+      notifyListeners();
     } catch (e, stackTrace) {
-      _errorMsg = e.toString();
+      _setErrorMsg(e.toString());
       debugPrint(
-        'Error while completeTask in TaskProvider: $e, stackTrace: $stackTrace',
+        'Error while updateTask in TaskProvider: $e, stackTrace: $stackTrace',
       );
     } finally {
-      _isLoading = false;
-      notifyListeners();
+      _setLoading(false);
     }
   }
 
-  Future<void> returnTask(TaskModel task) async {
-    final updated = task.copyWith(status: "pendiente");
-
-    await taskRepository.updateTask(updated.id!, updated);
-
-    await getAllTasks();
-    _isLoading = true;
+  void _setLoading(bool isLoading) {
+    if (isLoading == _isLoading) return;
+    _isLoading = isLoading;
+    notifyListeners();
   }
 
-  Future<void> markCompleted(String id) async {
-    await updateCompleteTask(id);
-    await getAllTasks();
+  void _setErrorMsg(String errorMsg) {
+    _errorMsg = errorMsg;
+    notifyListeners();
   }
 }

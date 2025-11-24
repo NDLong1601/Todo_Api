@@ -73,11 +73,15 @@ class _AddTaskScreenState extends State<AddTaskScreen> {
 
     try {
       await context.read<TaskProvider>().createTask(task);
-      Navigator.pop(context);
+      if (mounted) {
+        Navigator.pop(context);
+      }
     } catch (e) {
-      ScaffoldMessenger.of(
-        context,
-      ).showSnackBar(SnackBar(content: Text('Failed to add task: $e')));
+      if (mounted) {
+        ScaffoldMessenger.of(
+          context,
+        ).showSnackBar(SnackBar(content: Text('Failed to add task: $e')));
+      }
     } finally {
       if (mounted) {
         setState(() => _isSubmitting = false);
