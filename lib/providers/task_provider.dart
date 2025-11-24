@@ -22,7 +22,7 @@ class TaskProvider extends ChangeNotifier {
       _taskList.where((task) => task.isPending).toList();
 
   List<TaskModel> get completedTasks =>
-      _taskList.where((task) => task.isCompleted).toList();
+      _taskList.where((task) => task.isCompleted && task.id != null).toList();
 
   /// Get All Tasks
   Future<void> getAllTasks() async {
@@ -50,6 +50,7 @@ class TaskProvider extends ChangeNotifier {
       notifyListeners();
 
       _taskList.removeWhere((task) => task.id == id);
+      notifyListeners();
     } catch (e, stackTrace) {
       _errorMsg = e.toString();
       debugPrint(

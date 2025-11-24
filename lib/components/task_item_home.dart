@@ -49,7 +49,7 @@ class TaskItemHome extends StatelessWidget {
                 ),
                 const SizedBox(height: 4),
                 AppText(
-                  title: task.description,
+                  title: task.description ?? '...',
                   style: AppTextStyle.regularTsSize10Black,
                 ),
               ],

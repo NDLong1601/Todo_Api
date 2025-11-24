@@ -34,7 +34,6 @@ class TaskItemCompleted extends StatelessWidget {
       child: Row(
         crossAxisAlignment: CrossAxisAlignment.center,
         children: [
-          // -------- LEFT: TITLE + SUBTITLE --------
           Expanded(
             child: Column(
               crossAxisAlignment: CrossAxisAlignment.start,

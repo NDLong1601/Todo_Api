@@ -53,7 +53,8 @@ class ApiService {
   Future<void> deleteTaskByID(String id) async {
     try {
       /// url contain id
-      final url = Uri.parse('$baseUrl/$id');
+      // final url = Uri.parse('$baseUrl/$id');
+      final url = Uri.parse('$baseUrl$id');
       final response = await http.delete(
         url,
         headers: apiHeader,
@@ -76,7 +77,7 @@ class ApiService {
   /// Update Task
   Future<TaskModel> updateTask(String id, TaskModel task) async {
     try {
-      final url = Uri.parse('$baseUrl/$id');
+      final url = Uri.parse("${baseUrl}$id");
 
       final response = await http.put(
         url,

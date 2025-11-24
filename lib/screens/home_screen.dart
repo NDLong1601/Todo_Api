@@ -67,17 +67,32 @@ class _HomeScreenState extends State<HomeScreen> {
 
                 return TaskItemHome(
                   task: task,
-
-                  onEdit: () {
-                    Navigator.push(
-                      context,
-                      MaterialPageRoute(
-                        builder: (_) => EditTaskScreen(task: task),
-                      ),
+                  onEdit: () async {
+                    final confirm = await showConfirmDialog(
+                      context: context,
+                      title: "Confirm Edit",
+                      message: "Do you want to edit this task?",
                     );
+
+                    if (confirm) {
+                      Navigator.push(
+                        context,
+                        MaterialPageRoute(
+                          builder: (_) => EditTaskScreen(task: task),
+                        ),
+                      );
+                    }
                   },
-                  onDelete: () {
-                    taskProvider.deleteTask(task.id!);
+                  onDelete: () async {
+                    final confirm = await showConfirmDialog(
+                      context: context,
+                      title: "Confirm Delete",
+                      message: "Are you sure you want to delete this task?",
+                    );
+
+                    if (confirm) {
+                      taskProvider.deleteTask(task.id!);
+                    }
                   },
                   onComplete: () {
                     taskProvider.markCompleted(task.id!);
@@ -151,4 +166,50 @@ class _HomeScreenState extends State<HomeScreen> {
       ),
     );
   }
+}
+
+Future<bool> showConfirmDialog({
+  required BuildContext context,
+  required String title,
+  required String message,
+}) async {
+  final result = await showDialog<bool>(
+    context: context,
+    barrierDismissible: false,
+    builder: (_) {
+      return AlertDialog(
+        title: Text(
+          title,
+          style: const TextStyle(
+            fontFamily: 'Jost',
+            fontSize: 18,
+            fontWeight: FontWeight.w600,
+          ),
+        ),
+        content: Text(
+          message,
+          style: const TextStyle(fontFamily: 'Jost', fontSize: 14),
+        ),
+        actions: [
+          TextButton(
+            onPressed: () => Navigator.pop(context, false),
+            child: const Text("Cancel", style: TextStyle(fontSize: 14)),
+          ),
+          TextButton(
+            onPressed: () => Navigator.pop(context, true),
+            child: const Text(
+              "OK",
+              style: TextStyle(
+                fontSize: 14,
+                color: Colors.redAccent,
+                fontWeight: FontWeight.w600,
+              ),
+            ),
+          ),
+        ],
+      );
+    },
+  );
+
+  return result ?? false;
 }
