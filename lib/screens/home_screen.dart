@@ -5,7 +5,9 @@ import 'package:todo_api/components/app_textstyle.dart';
 import 'package:todo_api/const/app_color.dart';
 import 'package:todo_api/providers/task_provider.dart';
 import 'package:todo_api/screens/add_task_screen.dart';
+import 'package:todo_api/screens/completed_screen.dart';
 import 'package:todo_api/screens/edit_task_screen.dart';
+import 'package:todo_api/components/task_item_home.dart';
 
 class HomeScreen extends StatefulWidget {
   const HomeScreen({super.key});
@@ -15,137 +17,137 @@ class HomeScreen extends StatefulWidget {
 }
 
 class _HomeScreenState extends State<HomeScreen> {
-  late VoidCallback onEdit;
-
   @override
   void initState() {
-    WidgetsBinding.instance.addPostFrameCallback((_) {
-      context.read<TaskProvider>().getAllTasks();
-    });
     super.initState();
+    WidgetsBinding.instance.addPostFrameCallback(
+      (_) => context.read<TaskProvider>().getAllTasks(),
+    );
   }
 
   @override
   Widget build(BuildContext context) {
-    final double screenHeight = MediaQuery.of(context).size.height;
-    final double screenWidth = MediaQuery.of(context).size.width;
     return Scaffold(
       backgroundColor: AppColor.purple1,
       appBar: AppBar(
+        backgroundColor: AppColor.purple,
         title: AppText(
           title: 'TODO APP',
           style: AppTextStyle.semiBoldTsSize24White,
         ),
-        backgroundColor: AppColor.purple,
+        centerTitle: false,
+        elevation: 0,
       ),
       body: Consumer<TaskProvider>(
         builder: (context, taskProvider, child) {
-          /// Loading state:
           if (taskProvider.isLoading) {
-            return Center(child: CircularProgressIndicator());
+            return const Center(child: CircularProgressIndicator());
           }
 
-          /// Error Message state:
           if (taskProvider.errorMsg.isNotEmpty) {
             return Center(child: Text('Error: ${taskProvider.errorMsg}'));
           }
 
-          /// Empty List
           if (taskProvider.pendingTasks.isEmpty) {
-            return Center(
-              child: Text('There is no task, please create your first task'),
+            return const Center(
+              child: Text(
+                'There is no task, please create your first task',
+                textAlign: TextAlign.center,
+              ),
             );
           }
+          return Padding(
+            padding: const EdgeInsets.only(top: 16),
+            child: ListView.separated(
+              padding: const EdgeInsets.symmetric(horizontal: 16),
+              itemCount: taskProvider.pendingTasks.length,
+              separatorBuilder: (_, __) => const SizedBox(height: 20),
+              itemBuilder: (context, index) {
+                final task = taskProvider.pendingTasks[index];
 
-          /// List Task with data
-          return Stack(
-            children: [
-              Padding(
-                padding: EdgeInsets.only(top: screenHeight * (22 / 896)),
-                child: Column(
-                  children: [
-                    Expanded(
-                      child: ListView.separated(
-                        itemCount: taskProvider.pendingTasks.length,
-                        separatorBuilder: (context, index) =>
-                            SizedBox(height: 15),
-                        itemBuilder: (context, index) {
-                          final item = taskProvider.pendingTasks[index];
-                          return Container(
-                            margin: EdgeInsets.symmetric(
-                              horizontal: screenWidth * (7 / 414),
-                            ),
-                            decoration: BoxDecoration(
-                              borderRadius: BorderRadius.circular(10),
-                              color: AppColor.white,
-                            ),
-                            height: screenHeight * (82 / 896),
-                            width: screenWidth * (400 / 414),
-                            padding: EdgeInsets.symmetric(
-                              vertical: screenHeight * (12 / 896),
-                              horizontal: 16,
-                            ),
-                            child: Row(
-                              mainAxisAlignment: MainAxisAlignment.spaceBetween,
-                              children: [
-                                Expanded(
-                                  child: Column(
-                                    crossAxisAlignment:
-                                        CrossAxisAlignment.start,
-                                    children: [
-                                      Flexible(
-                                        child: AppText(
-                                          title: item.title ?? '...',
-                                          maxLines: 1,
-                                          // overflow: TextOverflow.ellipsis,
-                                          style: AppTextStyle
-                                              .semiBoldTsSize13Purple,
-                                        ),
-                                      ),
-                                      SizedBox(height: 6),
-                                      Flexible(
-                                        child: AppText(
-                                          title: item.description ?? '...',
-                                          maxLines: 1,
-                                          // overflow: TextOverflow.ellipsis,
-                                          style:
-                                              AppTextStyle.regularTsSize10Black,
-                                        ),
-                                      ),
-                                    ],
-                                  ),
-                                ),
+                return TaskItemHome(
+                  task: task,
 
-                                Icon(Icons.edit, color: AppColor.purple),
-                                Icon(Icons.delete, color: AppColor.purple),
-                                Icon(
-                                  Icons.check_circle_outline,
-                                  color: AppColor.purple,
-                                ),
-                              ],
-                            ),
-                          );
-                        },
+                  onEdit: () {
+                    Navigator.push(
+                      context,
+                      MaterialPageRoute(
+                        builder: (_) => EditTaskScreen(task: task),
                       ),
-                    ),
-                  ],
-                ),
-              ),
-            ],
+                    );
+                  },
+                  onDelete: () {
+                    taskProvider.deleteTask(task.id!);
+                  },
+                  onComplete: () {
+                    taskProvider.markCompleted(task.id!);
+                  },
+                );
+              },
+            ),
           );
         },
       ),
-      bottomNavigationBar: BottomNavigationBar(
-        items: [
-          BottomNavigationBarItem(
-            icon: Icon(Icons.list),
-            label: 'List',
-            backgroundColor: AppColor.purple,
+
+      floatingActionButton: FloatingActionButton(
+        backgroundColor: AppColor.purple,
+        shape: const CircleBorder(),
+        child: const Icon(Icons.add, color: Colors.white),
+        onPressed: () {
+          Navigator.push(
+            context,
+            MaterialPageRoute(builder: (_) => const AddTaskScreen()),
+          );
+        },
+      ),
+
+      bottomNavigationBar: SafeArea(
+        child: Container(
+          height: 60,
+          color: AppColor.purple,
+          child: Row(
+            children: [
+              Expanded(
+                child: GestureDetector(
+                  onTap: () {},
+                  child: Column(
+                    mainAxisAlignment: MainAxisAlignment.center,
+                    children: [
+                      const Icon(Icons.list, color: Colors.white),
+                      AppText(
+                        title: 'All',
+                        style: AppTextStyle.regularTsSize10White,
+                      ),
+                    ],
+                  ),
+                ),
+              ),
+
+              Expanded(
+                child: GestureDetector(
+                  onTap: () {
+                    Navigator.push(
+                      context,
+                      MaterialPageRoute(
+                        builder: (_) => const CompletedScreen(),
+                      ),
+                    );
+                  },
+                  child: Column(
+                    mainAxisAlignment: MainAxisAlignment.center,
+                    children: [
+                      const Icon(Icons.check, color: Colors.white),
+                      AppText(
+                        title: 'Completed',
+                        style: AppTextStyle.regularTsSize10White,
+                      ),
+                    ],
+                  ),
+                ),
+              ),
+            ],
           ),
-          BottomNavigationBarItem(icon: Icon(Icons.done), label: 'Completed'),
-        ],
-        currentIndex: 0,
-        onTap: (index) {},
+        ),
       ),
     );
   }

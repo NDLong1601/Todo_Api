@@ -23,4 +23,10 @@ class AppTextStyle {
     color: AppColor.black,
   );
 
+  static TextStyle regularTsSize10White = TextStyle(
+    fontFamily: 'Jost',
+    fontSize: 10,
+    fontWeight: FontWeight.w400,
+    color: AppColor.white,
+  );
 }

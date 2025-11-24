@@ -136,7 +136,7 @@ class ApiService {
   }
 
   /// Update Status
-  Future<TaskModel> completeTask(String id) async {
+  Future<TaskModel> updateCompleteTask(String id) async {
     try {
       final url = Uri.parse('$baseUrl$id');
 
