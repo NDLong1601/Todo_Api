@@ -77,13 +77,13 @@ class TaskProvider extends ChangeNotifier {
   }
 
   /// Delete Task
-  Future<void> deleteTask(String id) async {
+  Future<void> deleteTask(TaskModel task) async {
     try {
       _setLoading(true);
-      await taskRepository.deleteTaskByID(id);
+      await taskRepository.deleteTask(task);
       notifyListeners();
 
-      _taskList.removeWhere((task) => task.id == id);
+      _taskList.removeWhere((t) => t.id == task.id);
       notifyListeners();
     } catch (e, stackTrace) {
       _setErrorMsg(e.toString());
@@ -119,12 +119,12 @@ class TaskProvider extends ChangeNotifier {
   Future<void> updateTask(TaskModel task) async {
     try {
       _setLoading(true);
-      await taskRepository.updateTask(task);
+      final result = await taskRepository.updateTask(task);
 
       /// Update _taskList
       final index = _taskList.indexWhere((t) => t.id == task.id);
       if (index != -1) {
-        _taskList[index] = task;
+        _taskList[index] = result;
       }
       notifyListeners();
     } catch (e, stackTrace) {

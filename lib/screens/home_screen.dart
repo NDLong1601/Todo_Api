@@ -94,7 +94,7 @@ class _HomeScreenState extends State<HomeScreen> {
                       /// Always need to check task.id is not null
                       /// because task.id is nullable -> crash the app if null
                       if (task.id == null) return;
-                      taskProvider.deleteTask(task.id!);
+                      taskProvider.deleteTask(task);
                     }
                   },
                   onComplete: () {
@@ -128,7 +128,7 @@ class _HomeScreenState extends State<HomeScreen> {
 
 Container _buildBottomNavigationBarWidget(BuildContext context) {
   return Container(
-    color: AppColor.purple,
+    color: AppColor.white,
     padding: EdgeInsets.symmetric(vertical: 15),
     child: Row(
       children: [
@@ -139,8 +139,11 @@ Container _buildBottomNavigationBarWidget(BuildContext context) {
               mainAxisAlignment: MainAxisAlignment.center,
               mainAxisSize: MainAxisSize.min,
               children: [
-                const Icon(Icons.list, color: Colors.white),
-                AppText(title: 'All', style: AppTextStyle.regularTsSize10White),
+                const Icon(Icons.list, color: AppColor.purple),
+                AppText(
+                  title: 'All',
+                  style: AppTextStyle.regularTsSize10Purple,
+                ),
               ],
             ),
           ),
@@ -157,10 +160,10 @@ Container _buildBottomNavigationBarWidget(BuildContext context) {
               mainAxisAlignment: MainAxisAlignment.center,
               mainAxisSize: MainAxisSize.min,
               children: [
-                const Icon(Icons.check, color: Colors.white),
+                const Icon(Icons.check, color: Colors.grey),
                 AppText(
                   title: 'Completed',
-                  style: AppTextStyle.regularTsSize10White,
+                  style: AppTextStyle.regularTsSize10Grey,
                 ),
               ],
             ),

@@ -54,7 +54,7 @@ class ApiService {
   }
 
   /// Delete Task
-  Future<void> deleteTaskByID(String id) async {
+  Future<void> deleteTask(String id) async {
     try {
       /// url contain id
       final url = Uri.parse('$baseUrl$id');
@@ -80,32 +80,36 @@ class ApiService {
   }
 
   /// Update Task
-  Future<void> updateTask(TaskModel task) async {
+  Future<TaskModel> updateTask(String id, TaskModel task) async {
     try {
-      final url = Uri.parse("$baseUrl${task.id}");
+      final url = Uri.parse("$baseUrl$id");
 
       final response = await http.put(
         url,
         headers: apiHeader,
         body: jsonEncode(task.toJson()),
       );
-
       debugPrint('Method: PUT');
       debugPrint('PUT Task: $url');
       debugPrint('Response status: ${response.statusCode}');
       debugPrint('Response body: ${response.body}');
 
       if (response.statusCode == 200) {
-        debugPrint('Task updated successfully');
+        final jsonResponse = jsonDecode(response.body);
+
+        if (jsonResponse is Map<String, dynamic>) {
+          return TaskModel.fromJson(jsonResponse);
+        } else {
+          throw Exception("Invalid API response format for updateTask");
+        }
       } else {
         throw Exception(
-          'Failed to update task: '
-          '${response.statusCode} - ${response.body}',
+          "Failed to update task: ${response.statusCode} - ${response.body}",
         );
       }
     } catch (e, stackTrace) {
-      debugPrint('Error while updating Task in ApiService: $e');
-      debugPrint('StackTrace: $stackTrace');
+      debugPrint("Error updating task in ApiService: $e");
+      debugPrint("StackTrace: $stackTrace");
       throw Exception(e);
     }
   }

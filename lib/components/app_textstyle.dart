@@ -29,6 +29,18 @@ class AppTextStyle {
     fontWeight: FontWeight.w400,
     color: AppColor.white,
   );
+  static TextStyle regularTsSize10Purple = TextStyle(
+    fontFamily: 'Jost',
+    fontSize: 10,
+    fontWeight: FontWeight.w400,
+    color: AppColor.purple,
+  );
+  static TextStyle regularTsSize10Grey = TextStyle(
+    fontFamily: 'Jost',
+    fontSize: 10,
+    fontWeight: FontWeight.w400,
+    color: AppColor.grey,
+  );
 
   static TextStyle semiBoldTsSize20White = TextStyle(
     fontFamily: 'Jost',

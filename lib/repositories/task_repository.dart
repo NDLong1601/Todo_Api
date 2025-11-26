@@ -24,8 +24,21 @@ class TaskRepository {
       if (!result.contains(ConnectivityResult.none)) {
         /// If we are online now, trigger sync
         // await _syncPendingTasks();
+        debugPrint('Device is online. You can implement sync logic here.');
+        // try {
+        //   final remoteTasks = await apiService.getAllTasks();
+        //   await localService.saveAllTasks(remoteTasks);
+        //   debugPrint('Local tasks synced with remote server.');
+        // } catch (e) {
+        //   debugPrint('Error during sync: $e');
+        // }
+        await syncPendingTasks();
+        final remoteTasks = await apiService.getAllTasks();
+        await localService.saveAllTasks(remoteTasks);
+        debugPrint('Local refreshed from server');
       } else {
         /// We are offline now
+        debugPrint("Offline mode enabled");
       }
     });
   }
@@ -54,11 +67,28 @@ class TaskRepository {
   }
 
   /// Delete Task
-  Future<void> deleteTaskByID(String id) async {
+  Future<void> deleteTask(TaskModel task) async {
     try {
       /// isOnline -> get from API
       /// isOffline -> get from Local Storage
-      return await apiService.deleteTaskByID(id);
+      if (await _isOnline()) {
+        try {
+          await apiService.deleteTask(task.id!);
+          await localService.deleteTask(task);
+          return;
+        } catch (e, stackTrace) {
+          debugPrint("DELETE online failed: $e\n$stackTrace");
+          // lưu vào queue
+          await localService.addToSyncQueue(operation: "delete", task: task);
+          await localService.deleteTask(task);
+          return;
+        }
+      } else {
+        // offline → lưu queue + local
+        await localService.addToSyncQueue(operation: "delete", task: task);
+        await localService.deleteTask(task);
+        return;
+      }
     } catch (e, stackTrace) {
       debugPrint(
         'Error deleting task in TaskRepository: $e, stackTrace: $stackTrace',
@@ -67,17 +97,44 @@ class TaskRepository {
     }
   }
 
-  /// Update Task
-  Future<void> updateTask(TaskModel task) async {
+  /// UPDATE TASK
+  Future<TaskModel> updateTask(TaskModel task) async {
     try {
+      if (task.id == null) {
+        throw Exception("Cannot update task without ID");
+      }
+
       /// isOnline -> get from API
       /// isOffline -> get from Local Storage
-      await apiService.updateTask(task);
-    } catch (e, stackTrace) {
-      debugPrint(
-        'Error updating task in TaskRepository: $e, stackTrace: $stackTrace',
-      );
-      throw Exception(e);
+      if (await _isOnline()) {
+        try {
+          final updated = await apiService.updateTask(task.id!, task);
+
+          // lưu local
+          await localService.updateLocalTask(updated);
+
+          return updated;
+        } catch (e, stackTrace) {
+          debugPrint("UPDATE online failed: $e\n$stackTrace");
+
+          // lưu vào queue
+          await localService.addToSyncQueue(operation: "update", task: task);
+
+          await localService.updateLocalTask(task);
+
+          return task;
+        }
+      } else {
+        // offline → lưu queue + local
+        await localService.addToSyncQueue(operation: "update", task: task);
+
+        await localService.updateLocalTask(task);
+
+        return task;
+      }
+    } catch (e, strackTrace) {
+      debugPrint("Error updateTask: $e\n$strackTrace");
+      rethrow;
     }
   }
 
@@ -86,7 +143,25 @@ class TaskRepository {
     try {
       /// isOnline -> get from API
       /// isOffline -> get from Local Storage
-      return await apiService.createTask(task);
+      if (await _isOnline()) {
+        try {
+          final created = await apiService.createTask(task);
+          await localService.saveTask(created);
+          return created;
+        } catch (e, stackTrace) {
+          debugPrint("CREATE online failed: $e\n$stackTrace");
+          await localService.addToSyncQueue(operation: "create", task: task);
+          await localService.saveTask(task);
+
+          return task;
+        }
+      } else {
+        // offline → lưu queue + local
+        await localService.addToSyncQueue(operation: "create", task: task);
+        await localService.saveTask(task);
+
+        return task;
+      }
     } catch (e, stackTrace) {
       debugPrint(
         'Error creating task in TaskRepository: $e, stackTrace: $stackTrace',
@@ -109,5 +184,45 @@ class TaskRepository {
       );
       return false;
     }
+  }
+
+  /// Sync pending tasks in the sync queue
+  Future<void> syncPendingTasks() async {
+    final online = await _isOnline();
+    if (!online) return;
+
+    final queue = await localService.getSyncQueue();
+    if (queue.isEmpty) return;
+
+    debugPrint("Syncing ${queue.length} pending operations...");
+
+    final copiedQueue = List<Map>.from(queue);
+
+    for (int i = 0; i < copiedQueue.length; i++) {
+      final item = copiedQueue[i];
+
+      try {
+        final operation = item["operation"];
+        final taskJson = Map<String, dynamic>.from(item["task"]);
+        final task = TaskModel.fromJson(taskJson);
+
+        if (operation == "create") {
+          final created = await apiService.createTask(task);
+          await localService.saveTask(created);
+        } else if (operation == "update") {
+          await apiService.updateTask(task.id!, task);
+          await localService.updateLocalTask(task);
+        } else if (operation == "delete") {
+          await apiService.deleteTask(task.id!);
+          await localService.deleteTask(task);
+        }
+
+        await localService.removeFromSyncQueue(i);
+      } catch (e, st) {
+        debugPrint(" Sync item $i failed: $e\n$st");
+      }
+    }
+
+    debugPrint("Sync completed!");
   }
 }
