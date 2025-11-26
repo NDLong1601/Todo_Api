@@ -128,11 +128,11 @@ class ApiService {
 
       if (response.statusCode == 200 || response.statusCode == 201) {
         final jsonRespone = jsonDecode(response.body);
-        if (jsonRespone is Map<String, dynamic>) {
-          return TaskModel.fromJson(jsonRespone);
-        } else {
-          throw Exception("Invalid API response format (POST)");
+        final newID = jsonRespone["data"]["id"];
+        if (newID == null) {
+          throw Exception('API return null ID when creating task');
         }
+        return task.copyWith(id: newID);
       } else {
         throw Exception(
           'Failed to create task: ${response.statusCode} - ${response.body}',

@@ -23,6 +23,37 @@ class TaskProvider extends ChangeNotifier {
       _taskList.where((task) => task.isCompleted && task.id != null).toList();
 
   /// Validate -> enable or disable add button
+  String _addTitle = '';
+  String get addTitle => _addTitle;
+
+  String _addDetail = '';
+  String get addDetail => _addDetail;
+
+  void setAddTitle(String title) {
+    _addTitle = title;
+    notifyListeners();
+  }
+
+  void setAddDetail(String detail) {
+    _addDetail = detail;
+    notifyListeners();
+  }
+
+  bool get isAddValid {
+    final title = _addTitle.trim();
+    final detail = _addDetail.trim();
+    return title.isNotEmpty &&
+        title.length <= 100 &&
+        detail.isNotEmpty &&
+        detail.length <= 500;
+  }
+
+  bool _isAdding = false;
+  bool get isAdding => _isAdding;
+  void setIsAdding(bool isAdding) {
+    _isAdding = isAdding;
+    notifyListeners();
+  }
 
   Future<void> init() async {
     await taskRepository.init();
@@ -68,12 +99,8 @@ class TaskProvider extends ChangeNotifier {
   Future<void> createTask(TaskModel task) async {
     try {
       _setLoading(true);
-
-      /// Call api create task
+      setIsAdding(true);
       final createTask = await taskRepository.createTask(task);
-
-      /// Api create success, add task created to _taskList
-      /// TODO: Check flow create task again
 
       _taskList.add(createTask);
       notifyListeners();
@@ -84,6 +111,7 @@ class TaskProvider extends ChangeNotifier {
       );
     } finally {
       _setLoading(false);
+      setIsAdding(false);
     }
   }
 

@@ -11,6 +11,7 @@ class AppTextField extends StatelessWidget {
   final FocusNode? focusNode;
   final bool isRequired;
   final String? errorText;
+  final Function(String)? onChanged;
 
   const AppTextField({
     super.key,
@@ -23,6 +24,7 @@ class AppTextField extends StatelessWidget {
     this.focusNode,
     this.isRequired = false,
     this.errorText,
+    this.onChanged,
   });
 
   @override
@@ -34,6 +36,7 @@ class AppTextField extends StatelessWidget {
       maxLines: maxLines,
       maxLength: maxLength,
       keyboardType: keyboardType,
+      onChanged: onChanged,
       decoration: InputDecoration(
         counterText: '',
         labelText: label,
