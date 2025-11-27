@@ -36,7 +36,7 @@ class ApiService {
           /// convert JSON -> Object TaskModel
           return allTasks
               .map((taskJson) => TaskModel.fromJson(taskJson))
-              .where((task) => task.id != null)
+              .where((task) => task.id != null && task.id!.isNotEmpty)
               .toList();
         } else {
           throw Exception("Api get all tasks don't have any data");
@@ -80,9 +80,9 @@ class ApiService {
   }
 
   /// Update Task
-  Future<TaskModel> updateTask(String id, TaskModel task) async {
+  Future<void> updateTask(TaskModel task) async {
     try {
-      final url = Uri.parse("$baseUrl$id");
+      final url = Uri.parse("$baseUrl${task.id}");
 
       final response = await http.put(
         url,
@@ -95,13 +95,7 @@ class ApiService {
       debugPrint('Response body: ${response.body}');
 
       if (response.statusCode == 200) {
-        final jsonResponse = jsonDecode(response.body);
-
-        if (jsonResponse is Map<String, dynamic>) {
-          return TaskModel.fromJson(jsonResponse);
-        } else {
-          throw Exception("Invalid API response format for updateTask");
-        }
+        debugPrint('Task updated successfully: ${task.id}');
       } else {
         throw Exception(
           "Failed to update task: ${response.statusCode} - ${response.body}",
@@ -122,7 +116,11 @@ class ApiService {
       final response = await http.post(
         url,
         headers: apiHeader,
-        body: jsonEncode(task.toJson()),
+        body: jsonEncode({
+          'title': task.title,
+          'description': task.description,
+          'status': task.status,
+        }),
       );
 
       debugPrint('Method: POST');

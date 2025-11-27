@@ -34,6 +34,7 @@ class LocalService {
     await _taskBox.clear();
     for (var task in tasks) {
       await _taskBox.put(task.id, task);
+      debugPrint('Task with ID ${task.id} saved to local storage.');
     }
     debugPrint('All tasks saved to local storage.');
     debugPrint('Total tasks saved: ${_taskBox.length}');
@@ -42,27 +43,33 @@ class LocalService {
   /// Delete Task by ID from local storage
   Future<void> deleteTask(TaskModel task) async {
     await _taskBox.delete(task.id);
+    debugPrint('Task with ID ${task.id} deleted from local storage.');
   }
 
   /// Save one Task to local storage
   Future<void> saveTask(TaskModel task) async {
-    if (task.id == null) {
-      debugPrint('Cannot save task with null ID to local storage.');
-      return;
-    }
-    await _taskBox.put(task.id, task);
-    debugPrint('Task with ID ${task.id} saved to local storage.');
+    await _taskBox.put(
+      task.id ?? DateTime.now().millisecondsSinceEpoch.toString(),
+      task.copyWith(
+        id: task.id ?? DateTime.now().millisecondsSinceEpoch.toString(),
+      ),
+    );
+    debugPrint(
+      'Task with ID ${task.id ?? DateTime.now().millisecondsSinceEpoch.toString()} saved to local storage.',
+    );
   }
 
-  /// Update Task in local storage
-  // Future<void> updateTask(TaskModel task) async {
-  //   if (task.id == null) {
-  //     debugPrint('Cannot update task with null ID in local storage.');
-  //     return;
-  //   }
-  //   await _taskBox.put(task.id, task);
-  //   debugPrint('Task with ID ${task.id} updated in local storage.');
-  // }
+  Future<void> changeTaskIdFromSyncQueueBox({
+    required String oldId,
+    required String newId,
+  }) async {
+    final queueItem = _syncQueueBox.get(oldId);
+    await _syncQueueBox.delete(oldId);
+    if (queueItem != null) {
+      await _syncQueueBox.put(newId, queueItem);
+      debugPrint('Changed SyncQueueBox item ID from $oldId to $newId');
+    }
+  }
 
   /// Update Task in local storage
   Future<void> updateLocalTask(TaskModel task) async {
@@ -72,7 +79,6 @@ class LocalService {
     }
 
     await _taskBox.put(task.id, task);
-    await saveTask(task);
     debugPrint("Updated local task: ${task.id}");
   }
 
@@ -93,13 +99,21 @@ class LocalService {
     required String operation,
     required TaskModel task,
   }) async {
+    if (task.id == null) {
+      debugPrint("Cannot add to sync queue without task ID");
+
+      task.copyWith(id: DateTime.now().millisecondsSinceEpoch.toString());
+    }
     final payload = {
       "operation": operation,
       "task": task.toJson(),
       "timestamp": DateTime.now().toIso8601String(),
     };
+    
+    // await _syncQueueBox.add(value);
 
-    await _syncQueueBox.add(payload);
+    await _syncQueueBox.put(task.id!, payload);
+    debugPrint("_syncQueueBox length: ${_syncQueueBox.values.length}");
     debugPrint("Added to SyncQueue => OP: $operation | Task: ${task.id}");
   }
 
@@ -112,7 +126,7 @@ class LocalService {
     debugPrint("Cleared SyncQueue");
   }
 
-  Future<void> removeFromSyncQueue(int key) async {
+  Future<void> removeFromSyncQueue(String key) async {
     await _syncQueueBox.delete(key);
     debugPrint("Removed item with key $key from SyncQueue");
   }

@@ -119,12 +119,12 @@ class TaskProvider extends ChangeNotifier {
   Future<void> updateTask(TaskModel task) async {
     try {
       _setLoading(true);
-      final result = await taskRepository.updateTask(task);
+      await taskRepository.updateTask(task);
 
       /// Update _taskList
       final index = _taskList.indexWhere((t) => t.id == task.id);
       if (index != -1) {
-        _taskList[index] = result;
+        _taskList[index] = task;
       }
       notifyListeners();
     } catch (e, stackTrace) {
