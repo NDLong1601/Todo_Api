@@ -26,47 +26,106 @@ class _EditTaskScreenState extends State<EditTaskScreen> {
   @override
   void initState() {
     super.initState();
-
     _titleController = TextEditingController(text: widget.task.title);
     _detailController = TextEditingController(text: widget.task.description);
-
-    _titleController.addListener(() => setState(() {}));
-    _detailController.addListener(() => setState(() {}));
   }
 
-  bool get _isTitleValid =>
-      _titleController.text.trim().isNotEmpty &&
-      _titleController.text.trim().length <= 100;
+  @override
+  void dispose() {
+    _titleController.dispose();
+    _detailController.dispose();
+    super.dispose();
+  }
 
-  bool get _isDetailValid => _detailController.text.length <= 500;
+  void _showError(String message) {
+    if (!mounted) return;
+    ScaffoldMessenger.of(
+      context,
+    ).showSnackBar(SnackBar(content: Text(message)));
+  }
 
-  Future<void> _onUpdateTask() async {
+  void _showTaskNotFoundDialog() {
+    if (!mounted) return;
+    showDialog(
+      context: context,
+      builder: (_) => AlertDialog(
+        title: const Text("Task not found"),
+        content: const Text(
+          "This task no longer exists on the server.\n"
+          "It may have been deleted or modified elsewhere.",
+        ),
+        actions: [
+          TextButton(
+            onPressed: () {
+              Navigator.pop(context);
+              Navigator.pop(context);
+            },
+            child: const Text("OK"),
+          ),
+        ],
+      ),
+    );
+  }
+
+  Future<void> _onUpdatePressed() async {
     if (_isSubmitting) return;
 
-    if (!_isTitleValid || !_isDetailValid) {
-      ScaffoldMessenger.of(
-        context,
-      ).showSnackBar(const SnackBar(content: Text("Please check your inputs")));
+    final provider = context.read<TaskProvider>();
+
+    final title = _titleController.text.trim();
+    final detail = _detailController.text.trim();
+
+    // Title required
+    if (title.isEmpty) {
+      _showError("Title is required.");
+      return;
+    }
+    if (title.length > 100) {
+      _showError("Title cannot exceed 100 characters.");
       return;
     }
 
+    // Description required
+    if (detail.isEmpty) {
+      _showError("Description is required.");
+      return;
+    }
+    if (detail.length > 500) {
+      _showError("Description cannot exceed 500 characters.");
+      return;
+    }
+
+    // No changes
+    if (title == widget.task.title.trim() &&
+        detail == (widget.task.description).trim()) {
+      _showError("There are no changes to update.");
+      return;
+    }
+
+    final updatedTask = widget.task.copyWith(title: title, description: detail);
+
     setState(() => _isSubmitting = true);
 
-    final updatedTask = widget.task.copyWith(
-      title: _titleController.text.trim(),
-      description: _detailController.text.trim(),
-    );
-
     try {
-      await context.read<TaskProvider>().updateTask(updatedTask);
-      if (mounted) {
-        Navigator.pop(context);
-      }
+      await provider.updateTask(updatedTask);
+
+      if (!mounted) return;
+      Navigator.pop(context);
     } catch (e) {
-      if (mounted) {
-        ScaffoldMessenger.of(
-          context,
-        ).showSnackBar(SnackBar(content: Text("Failed to update task: $e")));
+      final msg = e.toString();
+
+      if (msg.contains("Failed host lookup") ||
+          msg.contains("SocketException")) {
+        _showError("No internet connection. Changes saved locally.");
+      } else if (msg.contains("404") ||
+          msg.toLowerCase().contains("not found")) {
+        _showTaskNotFoundDialog();
+      } else if (msg.toLowerCase().contains("timeout")) {
+        _showError("Request timed out. Please try again.");
+      } else if (msg.toLowerCase().contains("hive")) {
+        _showError("Local storage error. Please restart the app.");
+      } else {
+        _showError("Failed to update task: $msg");
       }
     } finally {
       if (mounted) {
@@ -77,7 +136,20 @@ class _EditTaskScreenState extends State<EditTaskScreen> {
 
   @override
   Widget build(BuildContext context) {
-    final isUpdateEnabled = _isTitleValid && _isDetailValid && !_isSubmitting;
+    final titleText = _titleController.text.trim();
+    final detailText = _detailController.text.trim();
+
+    final hasChanged =
+        titleText != widget.task.title.trim() ||
+        detailText != widget.task.description.trim();
+
+    final isFormValid =
+        titleText.isNotEmpty &&
+        titleText.length <= 100 &&
+        detailText.isNotEmpty &&
+        detailText.length <= 500;
+
+    final canSubmit = hasChanged && isFormValid && !_isSubmitting;
 
     return Scaffold(
       backgroundColor: Colors.white,
@@ -88,13 +160,12 @@ class _EditTaskScreenState extends State<EditTaskScreen> {
           icon: const Icon(Icons.arrow_back_ios, color: Colors.white),
           onPressed: () => Navigator.pop(context),
         ),
+        centerTitle: true,
         title: AppText(
           title: "Edit Task",
           style: AppTextStyle.semiBoldTsSize24White,
         ),
-        centerTitle: true,
       ),
-
       body: GestureDetector(
         onTap: () => FocusScope.of(context).unfocus(),
         child: SingleChildScrollView(
@@ -106,12 +177,15 @@ class _EditTaskScreenState extends State<EditTaskScreen> {
                 controller: _titleController,
                 label: "Title",
                 maxLength: 100,
-                errorText:
-                    !_isTitleValid && _titleController.text.trim().isNotEmpty
-                    ? "Title must be 1–100 characters"
-                    : null,
+                onChanged: (_) {
+                  setState(() {});
+                },
+                errorText: titleText.isEmpty
+                    ? "Title is required"
+                    : (titleText.length > 100
+                          ? "Title cannot exceed 100 characters"
+                          : null),
               ),
-
               const SizedBox(height: 24),
               AppTextField(
                 controller: _detailController,
@@ -119,30 +193,35 @@ class _EditTaskScreenState extends State<EditTaskScreen> {
                 minLines: 2,
                 maxLines: null,
                 maxLength: 500,
-                keyboardType: TextInputType.multiline,
-                errorText: !_isDetailValid
-                    ? "Detail must be <= 500 characters"
-                    : null,
+                onChanged: (_) {
+                  setState(() {});
+                },
+                errorText: detailText.isEmpty
+                    ? "Description is required"
+                    : (detailText.length > 500
+                          ? "Description cannot exceed 500 characters"
+                          : null),
               ),
-
               const SizedBox(height: 40),
+
               Row(
                 children: [
                   Expanded(
                     child: AppButton(
-                      label: "Update",
-                      enabled: isUpdateEnabled,
+                      label: "UPDATE",
+                      enabled: canSubmit,
                       isLoading: _isSubmitting,
-                      onPressed: _onUpdateTask,
+                      onPressed: canSubmit ? _onUpdatePressed : null,
                     ),
                   ),
                   const SizedBox(width: 16),
                   Expanded(
                     child: AppButton(
-                      label: "Cancel",
-                      enabled: true,
+                      label: "CANCEL",
+                      enabled: !_isSubmitting,
                       isLoading: false,
                       onPressed: () {
+                        if (_isSubmitting) return;
                         Navigator.pop(context);
                       },
                     ),
