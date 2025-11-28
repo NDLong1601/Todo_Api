@@ -56,8 +56,44 @@ class TaskProvider extends ChangeNotifier {
   }
 
   Future<void> init() async {
+    // IMPORTANT: Set callback BEFORE initializing repository
+    // Otherwise, if auto-sync triggers during init, callback won't be called
+    taskRepository.onSyncCompleted = _onSyncCompleted;
+
     await taskRepository.init();
+
     await getAllTasks();
+  }
+
+  /// Callback invoked when repository completes sync
+  ///
+  /// This is called after:
+  /// - Automatic sync when device comes online
+  /// - Manual sync triggered by user
+  ///
+  /// The repository has already:
+  /// 1. Synced pending operations to server
+  /// 2. Fetched latest tasks from server
+  /// 3. Updated local storage
+  ///
+  /// So we just need to refresh our task list from local storage and notify UI.
+  Future<void> _onSyncCompleted() async {
+    debugPrint('TaskProvider: Sync completed, refreshing task list...');
+
+    try {
+      // Don't call repository.getAllTasks() - it would make another API call!
+      // Repository already fetched from server and updated local storage.
+      // We just need to read from local storage.
+      _taskList = await taskRepository.localService.getAllTasks();
+      notifyListeners();
+      debugPrint(
+        'TaskProvider: Task list refreshed (${_taskList.length} tasks)',
+      );
+    } catch (e, stackTrace) {
+      debugPrint('Error refreshing task list after sync: $e\n$stackTrace');
+      // If error, try full refresh
+      await getAllTasks();
+    }
   }
 
   /// Get All Tasks
@@ -71,6 +107,38 @@ class TaskProvider extends ChangeNotifier {
       debugPrint(
         'Error while getAllTasks in TaskProvider: $e, stackTrace: $stackTrace',
       );
+    } finally {
+      _setLoading(false);
+    }
+  }
+
+  /// Manually trigger sync
+  ///
+  /// This can be called from pull-to-refresh or a manual sync button.
+  /// It will:
+  /// 1. Sync all pending operations to server
+  /// 2. Fetch latest tasks from server
+  /// 3. Update local storage and UI
+  ///
+  /// Returns true if sync was successful, false otherwise.
+  Future<bool> syncTasks() async {
+    try {
+      _setLoading(true);
+      final bool success = await taskRepository.manualSync();
+      if (success) {
+        // Task list will be refreshed via onSyncCompleted callback
+        debugPrint('Manual sync successful');
+      } else {
+        _setErrorMsg('Sync failed: device is offline');
+        debugPrint('Manual sync failed: offline');
+      }
+      return success;
+    } catch (e, stackTrace) {
+      _setErrorMsg('Sync error: ${e.toString()}');
+      debugPrint(
+        'Error during manual sync in TaskProvider: $e, stackTrace: $stackTrace',
+      );
+      return false;
     } finally {
       _setLoading(false);
     }

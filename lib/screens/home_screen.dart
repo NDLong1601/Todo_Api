@@ -35,6 +35,15 @@ class _HomeScreenState extends State<HomeScreen> {
           title: 'TODO APP',
           style: AppTextStyle.semiBoldTsSize24White,
         ),
+        actions: [
+          IconButton(
+            icon: const Icon(Icons.sync, color: Colors.white),
+            onPressed: () async {
+              await context.read<TaskProvider>().syncTasks();
+            },
+          ),
+          SizedBox(width: 8),
+        ],
         centerTitle: false,
         elevation: 0,
       ),
@@ -49,17 +58,28 @@ class _HomeScreenState extends State<HomeScreen> {
           }
 
           if (taskProvider.pendingTasks.isEmpty) {
-            return const Center(
-              child: Text(
-                'There is no task, please create your first task',
-                textAlign: TextAlign.center,
+            return RefreshIndicator(
+              onRefresh: () async {
+                await taskProvider.syncTasks();
+              },
+              child: const Center(
+                child: SingleChildScrollView(
+                  physics: AlwaysScrollableScrollPhysics(),
+                  child: Text(
+                    'There is no task, please create your first task\n\nPull down to sync',
+                    textAlign: TextAlign.center,
+                  ),
+                ),
               ),
             );
           }
-          return Padding(
-            padding: const EdgeInsets.only(top: 16),
+
+          return RefreshIndicator(
+            onRefresh: () async {
+              await taskProvider.getAllTasks();
+            },
             child: ListView.separated(
-              padding: const EdgeInsets.symmetric(horizontal: 16),
+              padding: const EdgeInsets.fromLTRB(16, 16, 16, 50),
               itemCount: taskProvider.pendingTasks.length,
               separatorBuilder: (_, __) => const SizedBox(height: 20),
               itemBuilder: (context, index) {

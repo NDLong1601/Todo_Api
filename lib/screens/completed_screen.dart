@@ -41,32 +41,27 @@ class CompletedScreen extends StatelessWidget {
             return const Center(child: Text("There is no completed task"));
           }
 
-          return Padding(
-            padding: const EdgeInsets.only(top: 20),
-            child: ListView.separated(
-              padding: const EdgeInsets.symmetric(horizontal: 16),
-              itemCount: taskProvider.completedTasks.length,
-              separatorBuilder: (_, __) => const SizedBox(height: 16),
-              itemBuilder: (context, index) {
-                final task = taskProvider.completedTasks[index];
+          return ListView.separated(
+            padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 16),
+            itemCount: taskProvider.completedTasks.length,
+            separatorBuilder: (_, __) => const SizedBox(height: 16),
+            itemBuilder: (context, index) {
+              final task = taskProvider.completedTasks[index];
 
-                return TaskItemCompleted(
-                  task: task,
-                  onReturn: () async {
-                    final taskNeedsUpdate = task.copyWith(status: 'pendiente');
-                    await taskProvider.updateTask(taskNeedsUpdate);
-                    if (context.mounted) {
-                      ScaffoldMessenger.of(context).showSnackBar(
-                        const SnackBar(
-                          content: Text("Task returned to pending"),
-                        ),
-                      );
-                      Navigator.pop(context);
-                    }
-                  },
-                );
-              },
-            ),
+              return TaskItemCompleted(
+                task: task,
+                onReturn: () async {
+                  final taskNeedsUpdate = task.copyWith(status: 'pendiente');
+                  await taskProvider.updateTask(taskNeedsUpdate);
+                  if (context.mounted) {
+                    ScaffoldMessenger.of(context).showSnackBar(
+                      const SnackBar(content: Text("Task returned to pending")),
+                    );
+                    Navigator.pop(context);
+                  }
+                },
+              );
+            },
           );
         },
       ),
